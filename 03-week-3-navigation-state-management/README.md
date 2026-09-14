@@ -48,7 +48,10 @@
 
 #### Refleksi
 1. Kapan setState masih cukup, dan kapan state harus naik ke Riverpod?
-**setState cukup untuk state sederhana dalam satu widget. Riverpod digunakan jika state perlu dibagikan ke beberapa widget/halaman atau memiliki logika yang lebih kompleks.
+**setState cukup untuk state sederhana dalam satu widget. Riverpod digunakan jika state perlu dibagikan ke beberapa widget/halaman atau memiliki logika yang lebih kompleks.**
 2. Apa perbedaan context.go dan context.push, dan kapan masing-masing tepat digunakan?
+**context.go digunakan untuk berpindah route, sedangkan context.push digunakan untuk membuka halaman baru yang masih bisa kembali dengan tombol back.**
 3. Bagaimana AsyncValue mencegah bug dibanding tiga boolean terpisah?
+**AsyncValue menggabungkan kondisi loading, error, dan success dalam satu state sehingga lebih aman dibanding menggunakan beberapa boolean yang bisa memiliki kondisi yang bertentangan.**
 4. Bagian mana dari hasil AI yang Anda perbaiki, dan mengapa?
+**Saya memperbaiki penggunaan TodoTile, menambahkan filter provider, serta memastikan GoRouter, NavigationBar, dan penanganan AsyncValue sesuai dengan requirement.**
