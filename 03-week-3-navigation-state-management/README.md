@@ -48,6 +48,7 @@
 
 #### Refleksi
 1. Kapan setState masih cukup, dan kapan state harus naik ke Riverpod?
+**setState cukup untuk state sederhana dalam satu widget. Riverpod digunakan jika state perlu dibagikan ke beberapa widget/halaman atau memiliki logika yang lebih kompleks.
 2. Apa perbedaan context.go dan context.push, dan kapan masing-masing tepat digunakan?
 3. Bagaimana AsyncValue mencegah bug dibanding tiga boolean terpisah?
 4. Bagian mana dari hasil AI yang Anda perbaiki, dan mengapa?
