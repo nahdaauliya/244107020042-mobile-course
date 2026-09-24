@@ -1,14 +1,103 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:week4_api/data/models/post.dart';
+import 'package:week4_api/data/network_errors.dart';
+import 'package:week4_api/data/providers.dart';
+import 'package:week4_api/data/repositories/post_repository.dart';
 
-import 'package:week4_api/main.dart';
+class FakePostRepository extends PostRepository {
+  FakePostRepository({this.items, this.throwError = false})
+      : super(Dio());
+  final List<Post>? items;
+  final bool throwError;
+
+  @override
+  Future<List<Post>> fetchPosts() async {
+    if (throwError) {
+      throw DioException(
+        requestOptions: RequestOptions(path: '/posts'),
+        type: DioExceptionType.connectionError,
+      );
+    }
+    return items ?? const [];
+  }
+
+  @override
+  Future<List<Post>> fetchPostsPage(
+      {required int page, int limit = 10}) async {
+    return fetchPosts();
+  }
+
+  @override
+  Future<Post> fetchPost(int id) async {
+    if (throwError) {
+      throw DioException(
+        requestOptions: RequestOptions(path: '/posts/$id'),
+        type: DioExceptionType.connectionError,
+      );
+    }
+    final match = (items ?? const [])
+        .where((post) => post.id == id);
+    if (match.isEmpty) {
+      final request = RequestOptions(path: '/posts/$id');
+      throw DioException(
+        requestOptions: request,
+        response: Response(
+            requestOptions: request, statusCode: 404),
+        type: DioExceptionType.badResponse,
+      );
+    }
+    return match.first;
+  }
+}
 
 void main() {
-  testWidgets('App builds and renders the posts home screen',
-      (WidgetTester tester) async {
-    await tester.pumpWidget(const ProviderScope(child: MyApp()));
-    await tester.pump(const Duration(milliseconds: 100));
+  test('fromJson aman terhadap field yang hilang', () {
+    final post = Post.fromJson({'id': 7});
+    expect(post.id, 7);
+    expect(post.title, '');
+    expect(post.userId, 0);
+  });
 
-    expect(find.text('Posts Paged'), findsOneWidget);
+  test('friendlyErrorMessage untuk connection error', () {
+    final err = DioException(
+      requestOptions: RequestOptions(path: '/posts'),
+      type: DioExceptionType.connectionError,
+    );
+    expect(friendlyErrorMessage(err), contains('terhubung'));
+  });
+
+  test('provider sukses dengan repository palsu', () async {
+    final container = ProviderContainer(
+      overrides: [
+        postRepositoryProvider.overrideWithValue(
+          FakePostRepository(items: [
+            const Post(
+                userId: 1, id: 1, title: 'Tes', body: 'Isi'),
+          ]),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    // Gunakan helper readPostsOnce (lihat providers.dart).
+    final posts = await readPostsOnce(container);
+    expect(posts.length, 1);
+    expect(posts.first.title, 'Tes');
+  });
+
+  test('provider error dengan repository palsu', () async {
+    final container = ProviderContainer(
+      overrides: [
+        postRepositoryProvider.overrideWithValue(
+          FakePostRepository(throwError: true),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    // Gunakan helper readPostsErrorOnce (lihat providers.dart).
+    final err = await readPostsErrorOnce(container);
+    expect(err, isA<DioException>());
+    expect(friendlyErrorMessage(err!), contains('terhubung'));
   });
 }
