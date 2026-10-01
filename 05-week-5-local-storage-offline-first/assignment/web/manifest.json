@@ -1,6 +1,6 @@
 {
-    "name": "ai_challenge",
-    "short_name": "ai_challenge",
+    "name": "Offline Notes",
+    "short_name": "Offline Notes",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
