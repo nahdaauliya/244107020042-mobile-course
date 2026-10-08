@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "327720969732",
+    "project_id": "campus-notify-7d997",
+    "storage_bucket": "campus-notify-7d997.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:327720969732:android:53ead723bc48f4e50ef751",
+        "android_client_info": {
+          "package_name": "com.example.campus_notify"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA2D2gzL6drKIBvI2QYvXENPHsW2DPuUQ4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
