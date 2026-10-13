@@ -19,6 +19,17 @@ Campus Notify memungkinkan mahasiswa menerima pengumuman kampus dan notifikasi s
 
 ---
 
+## 🏗️ Audit Penempatan Layer
+
+| File                            | Layer saat ini            | Masalah                                                                                                                                       |
+| ------------------------------- | ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pages/home_page.dart`          | presentation              | Tidak memanggil Dio langsung. Tidak ada formatting tanggal maupun parsing JSON di widget (masih berupa placeholder statis).                    |
+| `data/api_client.dart`          | data                      | OK. Hanya membangun `Dio` beserta interceptor dan dipakai sebagai dependency repository, bukan dipanggil langsung dari widget.                  |
+| `providers/auth_provider.dart`  | presentation (state)      | OK. Hanya memanggil `AuthRepository` dan `TokenStore`, tidak mengandung logika data/network.                                                    |
+| `data/auth_repository.dart`     | data (+ kontrak tercampur)| Interface dan implementasi masih satu kelas; `AuthRepository` belum dipisah dari kontrak/abstraksinya.                                         |
+
+---
+
 ## 🧪 Pengujian FCM pada Berbagai Kondisi Aplikasi
 
 Fitur notifikasi FCM telah diuji pada tiga kondisi siklus hidup aplikasi menggunakan payload berikut:
@@ -133,3 +144,35 @@ Beberapa bagian dari draft awal AI perlu diperbaiki agar sesuai dengan kebutuhan
 
 3. **Callback Banner pada Kondisi Foreground**
    Terdapat masalah pada konfigurasi `InitializationSettings` dan callback ketika pengguna menekan notifikasi lokal. Perbaikan dilakukan pada sintaks parameter `InitializationSettings` dan dengan menghubungkan callback `_onRouteTap` agar penekanan notifikasi dapat menjalankan `router.go(route)` sesuai rute yang diterima.
+
+
+   ## Hasil Audit Clean Architecture
+
+Berdasarkan hasil pencarian pada project `campus_notify`, dilakukan pemeriksaan terhadap tiga pola pelanggaran Clean Architecture, yaitu akses jaringan atau database langsung dari presentation, logika bisnis di dalam fungsi `build()`, dan instansiasi dependency secara manual.
+
+### 1. Widget Mengakses Jaringan atau Database Secara Langsung
+
+**Hasil: 0 pelanggaran ditemukan.**
+
+Tidak ditemukan akses jaringan atau database secara langsung pada folder presentation. Penggunaan `FlutterSecureStorage` ditemukan pada `lib/data/token_store.dart`, sedangkan `Dio` ditemukan pada `lib/data/api_client.dart`. Keduanya berada di layer data sehingga tidak termasuk pelanggaran selama aksesnya tidak dilakukan langsung oleh widget.
+
+### 2. Logika Bisnis di Dalam Fungsi `build()`
+
+**Hasil: 0 pelanggaran ditemukan.**
+
+Tidak ditemukan logika bisnis di dalam fungsi `build()` pada folder `lib`. Hal ini menunjukkan bahwa tidak ditemukan indikasi logika bisnis yang ditempatkan langsung di dalam proses pembangunan tampilan berdasarkan pola pencarian yang dilakukan.
+
+### 3. Instansiasi Dependency Secara Manual (Dependency Injection Bocor)
+
+**Hasil: 0 pelanggaran ditemukan pada folder presentation.**
+
+Ditemukan dua penggunaan instansiasi dependency:
+
+- `lib/providers/auth_provider.dart:6` — `AuthRepository()` dibuat di dalam provider. Ini merupakan bagian dari composition root menggunakan Riverpod untuk mengatur dependency, sehingga bukan pelanggaran.
+- `lib/data/api_client.dart:6` — `Dio(BaseOptions(...))` dibuat di layer data. Instansiasi ini sesuai karena konfigurasi HTTP client berada di layer data.
+
+### Kesimpulan
+
+Berdasarkan ketiga pola pemeriksaan tersebut, tidak ditemukan pelanggaran Clean Architecture pada folder presentation (`lib/pages`) yang memerlukan refactor untuk ketiga pola klasik tersebut. Dependency jaringan dan penyimpanan ditemukan pada layer data, sedangkan dependency repository diatur melalui provider Riverpod.
+
+Meskipun demikian, hasil pencarian ini tidak membuktikan bahwa seluruh implementasi sudah sepenuhnya memenuhi prinsip Clean Architecture. Pemeriksaan lanjutan tetap diperlukan untuk memastikan pemisahan kontrak dan implementasi repository, arah dependency antar-layer, serta penempatan logika bisnis sudah sesuai.
