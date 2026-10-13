@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/format.dart';
 import '../providers/announcements_providers.dart';
 
 class AnnouncementPage extends ConsumerWidget {
@@ -33,6 +34,11 @@ class AnnouncementPage extends ConsumerWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                const SizedBox(height: 8),
+                Text(
+                  formatDateTime(announcement.publishedAt),
+                  style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                ),
                 const SizedBox(height: 12),
                 Text(
                   announcement.body,
@@ -41,8 +47,9 @@ class AnnouncementPage extends ConsumerWidget {
                 ),
               ],
             ),
+            // UI hanya menerima pesan Failure yang sudah ramah pengguna.
             error: (error, stackTrace) => Text(
-              'Gagal memuat pengumuman: $error',
+              '$error',
               textAlign: TextAlign.center,
             ),
             loading: () => const CircularProgressIndicator(),

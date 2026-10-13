@@ -6,6 +6,7 @@ class AnnouncementModel extends Announcement {
     required super.id,
     required super.title,
     required super.body,
+    required super.publishedAt,
   });
 
   factory AnnouncementModel.fromJson(Map<String, dynamic> json) {
@@ -13,6 +14,8 @@ class AnnouncementModel extends Announcement {
       id: json['id'].toString(),
       title: json['title'] as String? ?? '',
       body: json['body'] as String? ?? '',
+      publishedAt: DateTime.tryParse(json['published_at'] as String? ?? '') ??
+          DateTime.fromMillisecondsSinceEpoch(0),
     );
   }
 
@@ -20,8 +23,13 @@ class AnnouncementModel extends Announcement {
         'id': id,
         'title': title,
         'body': body,
+        'published_at': publishedAt.toIso8601String(),
       };
 
-  Announcement toEntity() =>
-      Announcement(id: id, title: title, body: body);
+  Announcement toEntity() => Announcement(
+        id: id,
+        title: title,
+        body: body,
+        publishedAt: publishedAt,
+      );
 }

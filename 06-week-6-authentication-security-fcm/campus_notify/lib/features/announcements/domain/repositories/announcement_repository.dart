@@ -1,7 +1,6 @@
 import '../entities/announcement.dart';
 
-/// Kontrak sumber pengumuman. Lapisan presentation dan use case hanya
-/// bergantung pada abstraksi ini, bukan pada implementasi di layer data.
+/// Kontrak sumber pengumuman. Implementasi disediakan layer data.
 abstract class AnnouncementRepository {
   Future<List<Announcement>> getAnnouncements();
 

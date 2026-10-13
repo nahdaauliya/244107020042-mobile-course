@@ -1,18 +1,27 @@
-abstract class Failure {
+sealed class Failure {
   const Failure(this.message);
 
+  /// Pesan yang ramah pengguna; UI hanya perlu menampilkan ini.
   final String message;
 
   @override
   String toString() => message;
 }
 
-class ServerFailure extends Failure {
-  const ServerFailure([super.message = 'Terjadi kesalahan pada server.']);
+class LocalFailure extends Failure {
+  const LocalFailure(super.message);
 }
 
-class CacheFailure extends Failure {
-  const CacheFailure([super.message = 'Gagal membaca data lokal.']);
+class NetworkFailure extends Failure {
+  const NetworkFailure(super.message);
+}
+
+class ValidationFailure extends Failure {
+  const ValidationFailure(super.message);
+}
+
+class AuthFailure extends Failure {
+  const AuthFailure(super.message);
 }
 
 class NotFoundFailure extends Failure {
