@@ -6,12 +6,21 @@ import 'package:go_router/go_router.dart';
 import 'features/announcements/presentation/pages/announcement_page.dart';
 import 'features/auth/presentation/pages/login_page.dart';
 import 'features/auth/presentation/providers/auth_providers.dart';
+import 'features/notes/data/repositories/note_repository_impl.dart';
 import 'features/notes/presentation/pages/notes_page.dart';
+import 'features/notes/presentation/providers/notes_providers.dart';
 import 'pages/home_page.dart';
 import 'messaging/push_service.dart';
 import 'routes.dart';
 
-final container = ProviderContainer();
+// Composition root: satu-satunya tempat yang merakit layer data ke domain.
+final container = ProviderContainer(
+  overrides: [
+    noteRepositoryProvider.overrideWithValue(
+      NoteRepositoryImpl(openDb: openNotesDb),
+    ),
+  ],
+);
 
 final router = GoRouter(
   redirect: (context, state) {
