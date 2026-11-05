@@ -1,17 +1,14 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:campus_notify/main.dart';
 
 void main() {
-  testWidgets('App renders login page by default', (WidgetTester tester) async {
-    await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
-        child: const MyApp(),
-      ),
-    );
+  testWidgets('App renders AI chat page by default', (
+    WidgetTester tester,
+  ) async {
+    await tester.pumpWidget(const MyApp());
+
     await tester.pumpAndSettle();
 
-    expect(find.text('Campus Notify - Login'), findsOneWidget);
+    expect(find.text('AI Chat'), findsOneWidget);
   });
 }

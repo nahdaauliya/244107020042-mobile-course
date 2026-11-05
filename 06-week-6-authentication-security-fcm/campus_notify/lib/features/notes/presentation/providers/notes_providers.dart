@@ -24,7 +24,6 @@ final addNoteProvider = Provider<AddNote>((ref) {
 // Presentation layer: state untuk UI.
 final notesProvider = AsyncNotifierProvider<NotesNotifier, List<Note>>(
   NotesNotifier.new,
-  retry: _noRetry,
 );
 
 // Pencarian judul: kata kunci berubah real-time saat pengguna mengetik.

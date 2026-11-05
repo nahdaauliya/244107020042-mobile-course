@@ -18,7 +18,6 @@ final loginProvider = Provider<Login>(
 
 final authStateProvider = AsyncNotifierProvider<AuthNotifier, bool>(
   AuthNotifier.new,
-  retry: _noRetry,
 );
 
 /// Kegagalan membaca secure storage bersifat permanen, bukan sementara;
