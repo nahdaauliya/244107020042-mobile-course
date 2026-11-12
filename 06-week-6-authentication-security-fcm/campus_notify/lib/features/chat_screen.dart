@@ -40,58 +40,48 @@ class _ChatScreenState extends State<ChatScreen> {
     await _sendQuestion(question, addUserMessage: true);
   }
 
+  
   Future<void> _sendQuestion(
     String question, {
     required bool addUserMessage,
   }) async {
     if (_isLoading) return;
-
+  
     setState(() {
       if (addUserMessage) {
         _messages.add(_ChatMessage(text: question, isUser: true));
       }
-
+  
       _isLoading = true;
     });
-
+  
     _scrollToBottom();
-
+  
     String? retryQuestion;
-
+  
     try {
       final answer = await _aiService.ask(question);
-
+  
       if (!mounted) return;
-
+  
       if (answer.trim().isEmpty) {
         throw Exception('AI tidak memberikan jawaban.');
       }
-
-      final aiMessageIndex = _messages.length;
+  
       setState(() {
-        _messages.add(_ChatMessage(text: '', isUser: false));
+        _messages.add(
+          _ChatMessage(text: answer, isUser: false),
+        );
       });
-
-      for (int i = 0; i < answer.length; i += 3) {
-        final end = (i + 3 < answer.length) ? i + 3 : answer.length;
-
-        if (!mounted) return;
-
-        setState(() {
-          _messages[aiMessageIndex].text = answer.substring(0, end);
-        });
-
-        _scrollToBottom();
-
-        await Future.delayed(const Duration(milliseconds: 30));
-      }
+  
+      _scrollToBottom();
     } catch (e) {
       if (!mounted) return;
-
+  
       final action = await _showAiErrorDialog(e);
-
+  
       if (!mounted) return;
-
+  
       if (action == 'retry') {
         retryQuestion = question;
       } else if (action == 'offline') {
@@ -111,15 +101,17 @@ class _ChatScreenState extends State<ChatScreen> {
         setState(() {
           _isLoading = false;
         });
-
-        _scrollToBottom();
       }
     }
-
+  
     if (retryQuestion != null && mounted) {
-      await _sendQuestion(retryQuestion, addUserMessage: false);
+      await _sendQuestion(
+        retryQuestion,
+        addUserMessage: false,
+      );
     }
   }
+
 
   Future<String?> _showAiErrorDialog(Object error) {
     final message = error.toString().replaceFirst('Exception: ', '');
@@ -315,7 +307,12 @@ class _ChatScreenState extends State<ChatScreen> {
     required ImageSource source,
     required bool useOcr,
   }) async {
-    final XFile? pickedImage = await _imagePicker.pickImage(source: source);
+    final XFile? pickedImage = await _imagePicker.pickImage(
+      source: source,
+      maxWidth: 1280,
+      maxHeight: 1280,
+      imageQuality: 80,
+    );
 
     if (pickedImage == null) return;
 

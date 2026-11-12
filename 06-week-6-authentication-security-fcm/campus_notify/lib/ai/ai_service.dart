@@ -10,8 +10,10 @@ class AiService {
   final _storage = const FlutterSecureStorage();
   final Map<String, String> _cache = {};
 
-  static const _apiUrl =
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent';
+  static const _baseUrl = 'https://api.x.ai/v1';
+  static const _chatModel = 'grok-4.7';
+  static const _audioModel = 'grok-voice-transcribe-2.0';
+
   static const _dailyLimit = 50;
   static const _requestTimeout = Duration(seconds: 45);
 
@@ -38,19 +40,24 @@ class AiService {
     await _reserveRequest();
 
     final data = await _post(apiKey, {
-      'contents': [
+      'model': _chatModel,
+      'input': [
         {
-          'parts': [
-            {'text': trimmed},
+          'role': 'user',
+          'content': [
+            {
+              'type': 'input_text',
+              'text': trimmed,
+            },
           ],
         },
       ],
     });
 
-    final text = _extractText(data);
-    _cache[cacheKey] = text;
+    final answer = _extractResponseText(data);
+    _cache[cacheKey] = answer;
 
-    return text;
+    return answer;
   }
 
   Future<String> recognizeText(File imageFile) {
@@ -69,16 +76,89 @@ class AiService {
     return _analyzeImage(imageFile, question);
   }
 
-  Future<String> speechToText(File audioFile) {
-    return _analyzeAudio(
-      audioFile,
-      'Transcribe this audio exactly as spoken. '
-      'Preserve the original language. Return only the transcript.',
-    );
+  Future<String> speechToText(File audioFile) async {
+    if (!await audioFile.exists()) {
+      throw Exception('File audio tidak ditemukan.');
+    }
+
+    final apiKey = await _readApiKey();
+    await _reserveRequest();
+
+    try {
+      final request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$_baseUrl/stt'),
+      );
+
+      request.headers['Authorization'] = 'Bearer $apiKey';
+
+      request.fields['model'] = _audioModel;
+      request.fields['format'] = 'true';
+
+      // File harus menjadi field terakhir pada multipart request.
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          audioFile.path,
+        ),
+      );
+
+      final streamedResponse = await request
+          .send()
+          .timeout(_requestTimeout);
+
+      final response = await http.Response.fromStream(
+        streamedResponse,
+      ).timeout(_requestTimeout);
+
+      if (response.statusCode != 200) {
+        throw Exception(
+          _errorMessage(
+            response.statusCode,
+            response.body,
+          ),
+        );
+      }
+
+      final decoded = jsonDecode(response.body);
+
+      if (decoded is Map<String, dynamic> &&
+          decoded['text'] is String) {
+        final transcript = (decoded['text'] as String).trim();
+
+        if (transcript.isNotEmpty) {
+          return transcript;
+        }
+      }
+
+      throw Exception('Hasil transkripsi audio kosong.');
+    } on TimeoutException {
+      throw Exception('Transkripsi audio timeout. Coba lagi.');
+    } on SocketException {
+      throw Exception(
+        'Tidak ada koneksi internet. Periksa jaringan Anda.',
+      );
+    } on http.ClientException {
+      throw Exception(
+        'Gagal menghubungi layanan transkripsi Grok.',
+      );
+    } on FormatException {
+      throw Exception('Respons transkripsi tidak valid.');
+    }
   }
 
   Future<void> saveApiKey(String key) async {
-    await _storage.write(key: 'ai_api_key', value: key.trim());
+    final trimmedKey = key.trim();
+
+    if (trimmedKey.isEmpty) {
+      throw Exception('API key tidak boleh kosong.');
+    }
+
+    await _storage.write(
+      key: 'ai_api_key',
+      value: trimmedKey,
+    );
+
     _cache.clear();
   }
 
@@ -86,7 +166,10 @@ class AiService {
     final apiKey = await _storage.read(key: 'ai_api_key');
 
     if (apiKey == null || apiKey.isEmpty) {
-      throw Exception('API key tidak tersedia. Silakan atur di pengaturan.');
+      throw Exception(
+        'API key Grok tidak tersedia. '
+        'Silakan atur di pengaturan.',
+      );
     }
 
     return apiKey;
@@ -94,8 +177,13 @@ class AiService {
 
   Future<void> _reserveRequest() async {
     final prefs = await SharedPreferences.getInstance();
-    final today = DateTime.now().toIso8601String().substring(0, 10);
+
+    final today = DateTime.now()
+        .toIso8601String()
+        .substring(0, 10);
+
     final storedDate = prefs.getString('ai_usage_date');
+
     final used = storedDate == today
         ? (prefs.getInt('ai_usage_count') ?? 0)
         : 0;
@@ -111,68 +199,56 @@ class AiService {
     await prefs.setInt('ai_usage_count', used + 1);
   }
 
-  Future<String> _analyzeImage(File imageFile, String prompt) async {
+  Future<String> _analyzeImage(
+    File imageFile,
+    String prompt,
+  ) async {
+    if (!await imageFile.exists()) {
+      throw Exception('File gambar tidak ditemukan.');
+    }
+
     final apiKey = await _readApiKey();
     await _reserveRequest();
+
+    final extension = imageFile.path
+        .split('.')
+        .last
+        .toLowerCase();
+
+    final mimeType = switch (extension) {
+      'jpg' || 'jpeg' => 'image/jpeg',
+      'png' => 'image/png',
+      _ => throw Exception(
+          'Format gambar tidak didukung Grok. '
+          'Gunakan JPG, JPEG, atau PNG.',
+        ),
+    };
 
     final bytes = await imageFile.readAsBytes();
-    final extension = imageFile.path.split('.').last.toLowerCase();
 
-    final mimeType = switch (extension) {
-      'png' => 'image/png',
-      'webp' => 'image/webp',
-      'gif' => 'image/gif',
-      'heic' => 'image/heic',
-      _ => 'image/jpeg',
-    };
+    final imageData =
+        'data:$mimeType;base64,${base64Encode(bytes)}';
 
     final data = await _post(apiKey, {
-      'contents': [
+      'model': _chatModel,
+      'input': [
         {
-          'parts': [
-            {'text': prompt},
+          'role': 'user',
+          'content': [
             {
-              'inlineData': {'mimeType': mimeType, 'data': base64Encode(bytes)},
+              'type': 'input_text',
+              'text': prompt,
+            },
+            {
+              'type': 'input_image',
+              'image_url': imageData,
             },
           ],
         },
       ],
     });
 
-    return _extractText(data);
-  }
-
-  Future<String> _analyzeAudio(File audioFile, String prompt) async {
-    final apiKey = await _readApiKey();
-    await _reserveRequest();
-
-    final bytes = await audioFile.readAsBytes();
-    final extension = audioFile.path.split('.').last.toLowerCase();
-
-    final mimeType = switch (extension) {
-      'mp3' => 'audio/mp3',
-      'ogg' => 'audio/ogg',
-      'flac' => 'audio/flac',
-      'aac' => 'audio/aac',
-      'm4a' => 'audio/mp4',
-      'aiff' => 'audio/aiff',
-      _ => 'audio/wav',
-    };
-
-    final data = await _post(apiKey, {
-      'contents': [
-        {
-          'parts': [
-            {'text': prompt},
-            {
-              'inlineData': {'mimeType': mimeType, 'data': base64Encode(bytes)},
-            },
-          ],
-        },
-      ],
-    });
-
-    return _extractText(data);
+    return _extractResponseText(data);
   }
 
   Future<Map<String, dynamic>> _post(
@@ -182,10 +258,10 @@ class AiService {
     try {
       final response = await http
           .post(
-            Uri.parse(_apiUrl),
+            Uri.parse('$_baseUrl/responses'),
             headers: {
               'Content-Type': 'application/json',
-              'x-goog-api-key': apiKey,
+              'Authorization': 'Bearer $apiKey',
             },
             body: jsonEncode(body),
           )
@@ -198,85 +274,112 @@ class AiService {
           return decoded;
         }
 
-        throw Exception('Respons AI tidak valid.');
+        throw Exception('Respons Grok tidak valid.');
       }
 
-      throw Exception(_errorMessage(response.statusCode));
+      throw Exception(
+        _errorMessage(
+          response.statusCode,
+          response.body,
+        ),
+      );
     } on TimeoutException {
-      throw Exception('Koneksi ke AI timeout. Silakan coba lagi.');
+      throw Exception('Koneksi ke Grok timeout. Silakan coba lagi.');
     } on SocketException {
-      throw Exception('Tidak ada koneksi internet. Periksa jaringan Anda.');
+      throw Exception(
+        'Tidak ada koneksi internet. Periksa jaringan Anda.',
+      );
     } on http.ClientException {
       throw Exception(
-        'Gagal menghubungi layanan AI. Periksa koneksi internet.',
+        'Gagal menghubungi layanan Grok. Periksa koneksi internet.',
       );
     } on FormatException {
-      throw Exception('Respons AI tidak valid.');
+      throw Exception('Respons Grok tidak valid.');
     }
   }
 
-  String _extractText(Map<String, dynamic> data) {
-    final candidates = data['candidates'];
+  String _extractResponseText(Map<String, dynamic> data) {
+    final output = data['output'];
 
-    if (candidates is List && candidates.isNotEmpty) {
-      final first = candidates.first;
+    if (output is List) {
+      final buffer = StringBuffer();
 
-      if (first is Map) {
-        final content = first['content'];
+      for (final item in output) {
+        if (item is! Map) continue;
 
-        if (content is Map) {
-          final parts = content['parts'];
+        final content = item['content'];
 
-          if (parts is List) {
-            final buffer = StringBuffer();
+        if (content is! List) continue;
 
-            for (final part in parts) {
-              if (part is Map && part['text'] is String) {
-                buffer.write(part['text']);
-              }
-            }
-
-            final text = buffer.toString().trim();
-
-            if (text.isNotEmpty) {
-              return text;
-            }
+        for (final part in content) {
+          if (part is Map &&
+              part['type'] == 'output_text' &&
+              part['text'] is String) {
+            buffer.write(part['text']);
           }
         }
       }
+
+      final answer = buffer.toString().trim();
+
+      if (answer.isNotEmpty) {
+        return answer;
+      }
     }
 
-    final feedback = data['promptFeedback'];
+    final error = data['error'];
 
-    if (feedback is Map && feedback['blockReason'] != null) {
-      throw Exception('AI menolak permintaan ini karena kebijakan konten.');
+    if (error is Map && error['message'] is String) {
+      throw Exception(error['message']);
     }
 
-    throw Exception('Respons AI kosong atau tidak valid.');
+    throw Exception('Respons Grok kosong atau tidak valid.');
   }
 
-  String _errorMessage(int statusCode) {
-    if (statusCode == 400 || statusCode == 401 || statusCode == 403) {
-      return 'API key tidak valid. Silakan masukkan API key '
-          'yang benar di pengaturan.';
+  String _errorMessage(
+    int statusCode,
+    String responseBody,
+  ) {
+    String? apiMessage;
+
+    try {
+      final decoded = jsonDecode(responseBody);
+
+      if (decoded is Map) {
+        final error = decoded['error'];
+
+        if (error is Map && error['message'] is String) {
+          apiMessage = error['message'] as String;
+        } else if (error is String) {
+          apiMessage = error;
+        }
+      }
+    } catch (_) {
+      // Gunakan pesan umum jika respons bukan JSON.
+    }
+
+    if (statusCode == 400) {
+      return apiMessage ?? 'Permintaan ke Grok tidak valid.';
+    }
+
+    if (statusCode == 401 || statusCode == 403) {
+      return 'API key Grok tidak valid atau tidak memiliki akses.';
+    }
+
+    if (statusCode == 404) {
+      return 'Endpoint atau model Grok tidak ditemukan.';
     }
 
     if (statusCode == 429) {
-      return 'Kuota AI habis atau terlalu banyak permintaan. '
-          'Coba lagi nanti.';
-    }
-
-    if (statusCode == 503) {
-      return 'Server AI sedang sibuk. Silakan coba lagi '
-          'beberapa saat.';
+      return 'Batas penggunaan atau kuota Grok tercapai. '
+          'Periksa kredit dan limit akun xAI.';
     }
 
     if (statusCode >= 500) {
-      return 'Layanan AI sedang bermasalah. '
-          'Silakan coba lagi nanti.';
+      return 'Server Grok sedang bermasalah. Coba lagi nanti.';
     }
 
-    return 'Gagal memanggil AI API: $statusCode.';
+    return apiMessage ?? 'Gagal memanggil Grok API: $statusCode.';
   }
 
   void _ensureSafeText(String text) {

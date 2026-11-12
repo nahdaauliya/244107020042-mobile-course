@@ -3,9 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/format.dart';
 import '../providers/notes_providers.dart';
+import 'note_detail_page.dart';
 
 class NotesPage extends ConsumerStatefulWidget {
-  const NotesPage({super.key});
+  const NotesPage({super.key, this.scrollController, this.refreshIndicatorKey});
+
+  final ScrollController? scrollController;
+  final GlobalKey<RefreshIndicatorState>? refreshIndicatorKey;
 
   @override
   ConsumerState<NotesPage> createState() => _NotesPageState();
@@ -81,20 +85,36 @@ class _NotesPageState extends ConsumerState<NotesPage> {
               ),
             );
           }
-          return ListView.separated(
-            itemCount: notes.length,
-            separatorBuilder: (_, _) => const Divider(height: 1),
-            itemBuilder: (context, index) {
-              final note = notes[index];
-              final updated = formatDateTime(note.updatedAt);
-              return ListTile(
-                title: Text(note.title),
-                subtitle: Text(
-                  note.body.isEmpty ? updated : '$updated\n${note.body}',
-                ),
-                isThreeLine: note.body.isNotEmpty,
-              );
+          return RefreshIndicator(
+            key: widget.refreshIndicatorKey,
+            onRefresh: () async {
+              final refreshedNotes = ref.refresh(notesProvider.future);
+              await refreshedNotes;
             },
+            child: ListView.separated(
+              controller: widget.scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              itemCount: notes.length,
+              separatorBuilder: (_, _) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final note = notes[index];
+                final updated = formatDateTime(note.updatedAt);
+                return ListTile(
+                  title: Text(note.title),
+                  subtitle: Text(
+                    note.body.isEmpty ? updated : '$updated\n${note.body}',
+                  ),
+                  isThreeLine: note.body.isNotEmpty,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => NoteDetailPage(note: note),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           );
         },
       ),
