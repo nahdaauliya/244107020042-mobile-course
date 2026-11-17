@@ -5,8 +5,10 @@ import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'chat_validator.dart';
+import 'ai_repository.dart';
 
-class AiService {
+class AiService implements AiRepository {
   final _storage = const FlutterSecureStorage();
   final Map<String, String> _cache = {};
 
@@ -17,17 +19,9 @@ class AiService {
   static const _dailyLimit = 50;
   static const _requestTimeout = Duration(seconds: 45);
 
-  static final _nikPattern = RegExp(r'\b\d{16}\b');
-  static final _phonePattern = RegExp(r'(?:\+62|62|0)8\d{8,12}\b');
-
+  @override
   Future<String> ask(String question) async {
-    final trimmed = question.trim();
-
-    if (trimmed.isEmpty) {
-      throw Exception('Pertanyaan tidak boleh kosong.');
-    }
-
-    _ensureSafeText(trimmed);
+    final trimmed = ChatValidator.validate(question);
 
     final cacheKey = trimmed.toLowerCase();
     final cached = _cache[cacheKey];
@@ -60,6 +54,7 @@ class AiService {
     return answer;
   }
 
+  @override
   Future<String> recognizeText(File imageFile) {
     return _analyzeImage(
       imageFile,
@@ -69,6 +64,7 @@ class AiService {
     );
   }
 
+  @override
   Future<String> understandImage(
     File imageFile, {
     String question = 'Describe this image in detail.',
@@ -76,6 +72,7 @@ class AiService {
     return _analyzeImage(imageFile, question);
   }
 
+  @override
   Future<String> speechToText(File audioFile) async {
     if (!await audioFile.exists()) {
       throw Exception('File audio tidak ditemukan.');
@@ -147,6 +144,7 @@ class AiService {
     }
   }
 
+  @override
   Future<void> saveApiKey(String key) async {
     final trimmedKey = key.trim();
 
@@ -380,21 +378,5 @@ class AiService {
     }
 
     return apiMessage ?? 'Gagal memanggil Grok API: $statusCode.';
-  }
-
-  void _ensureSafeText(String text) {
-    if (_nikPattern.hasMatch(text)) {
-      throw Exception(
-        'Pertanyaan berisi NIK. Hapus data sensitif '
-        'sebelum mengirim ke AI.',
-      );
-    }
-
-    if (_phonePattern.hasMatch(text)) {
-      throw Exception(
-        'Pertanyaan berisi nomor telepon. Hapus data sensitif '
-        'sebelum mengirim ke AI.',
-      );
-    }
   }
 }

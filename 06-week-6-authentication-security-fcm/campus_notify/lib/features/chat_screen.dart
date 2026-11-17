@@ -7,21 +7,33 @@ import 'package:image_picker/image_picker.dart';
 import 'package:record/record.dart';
 
 import '../ai/ai_service.dart';
+import '../ai/ai_repository.dart';
 
 class ChatScreen extends StatefulWidget {
-  const ChatScreen({super.key});
+  final AiRepository? repository;
+
+  const ChatScreen({
+    super.key,
+    this.repository,
+  });
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final AiService _aiService = AiService();
+  late final AiRepository _aiService;
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
   final List<_ChatMessage> _messages = [];
   final ImagePicker _imagePicker = ImagePicker();
+
+  @override
+  void initState() {
+    super.initState();
+    _aiService = widget.repository ?? AiService();
+  }
 
   AudioRecorder? _recorder;
 
