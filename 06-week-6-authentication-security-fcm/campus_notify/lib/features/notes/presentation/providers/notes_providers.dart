@@ -29,8 +29,8 @@ final notesProvider = AsyncNotifierProvider<NotesNotifier, List<Note>>(
 // Pencarian judul: kata kunci berubah real-time saat pengguna mengetik.
 final notesSearchQueryProvider =
     NotifierProvider<NotesSearchQueryNotifier, String>(
-  NotesSearchQueryNotifier.new,
-);
+      NotesSearchQueryNotifier.new,
+    );
 
 class NotesSearchQueryNotifier extends Notifier<String> {
   @override
@@ -42,13 +42,10 @@ class NotesSearchQueryNotifier extends Notifier<String> {
 // Daftar catatan yang sudah difilter oleh use case domain.
 final filteredNotesProvider = Provider<AsyncValue<List<Note>>>((ref) {
   final query = ref.watch(notesSearchQueryProvider);
-  return ref.watch(notesProvider).whenData(
-        (notes) => const SearchNotes().call(notes, query),
-      );
+  return ref
+      .watch(notesProvider)
+      .whenData((notes) => const SearchNotes().call(notes, query));
 });
-
-/// Kegagalan baca SQLite lokal biasanya permanen; jangan retry otomatis.
-Duration? _noRetry(int retryCount, Object error) => null;
 
 class NotesNotifier extends AsyncNotifier<List<Note>> {
   @override
@@ -60,7 +57,9 @@ class NotesNotifier extends AsyncNotifier<List<Note>> {
   }
 
   Future<void> add({required String title, String body = ''}) async {
-    final result = await ref.read(addNoteProvider).call(title: title, body: body);
+    final result = await ref
+        .read(addNoteProvider)
+        .call(title: title, body: body);
     final failure = result.failure;
     if (failure != null) throw Exception(failure.message);
     ref.invalidateSelf();

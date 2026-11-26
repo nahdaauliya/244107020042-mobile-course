@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'chat_validator.dart';
 import 'ai_repository.dart';
 
@@ -39,10 +40,7 @@ class AiService implements AiRepository {
         {
           'role': 'user',
           'content': [
-            {
-              'type': 'input_text',
-              'text': trimmed,
-            },
+            {'type': 'input_text', 'text': trimmed},
           ],
         },
       ],
@@ -82,10 +80,7 @@ class AiService implements AiRepository {
     await _reserveRequest();
 
     try {
-      final request = http.MultipartRequest(
-        'POST',
-        Uri.parse('$_baseUrl/stt'),
-      );
+      final request = http.MultipartRequest('POST', Uri.parse('$_baseUrl/stt'));
 
       request.headers['Authorization'] = 'Bearer $apiKey';
 
@@ -94,33 +89,21 @@ class AiService implements AiRepository {
 
       // File harus menjadi field terakhir pada multipart request.
       request.files.add(
-        await http.MultipartFile.fromPath(
-          'file',
-          audioFile.path,
-        ),
+        await http.MultipartFile.fromPath('file', audioFile.path),
       );
 
-      final streamedResponse = await request
-          .send()
+      final streamedResponse = await request.send().timeout(_requestTimeout);
+
+      final response = await http.Response.fromStream(streamedResponse)
           .timeout(_requestTimeout);
 
-      final response = await http.Response.fromStream(
-        streamedResponse,
-      ).timeout(_requestTimeout);
-
       if (response.statusCode != 200) {
-        throw Exception(
-          _errorMessage(
-            response.statusCode,
-            response.body,
-          ),
-        );
+        throw Exception(_errorMessage(response.statusCode, response.body));
       }
 
       final decoded = jsonDecode(response.body);
 
-      if (decoded is Map<String, dynamic> &&
-          decoded['text'] is String) {
+      if (decoded is Map<String, dynamic> && decoded['text'] is String) {
         final transcript = (decoded['text'] as String).trim();
 
         if (transcript.isNotEmpty) {
@@ -132,13 +115,9 @@ class AiService implements AiRepository {
     } on TimeoutException {
       throw Exception('Transkripsi audio timeout. Coba lagi.');
     } on SocketException {
-      throw Exception(
-        'Tidak ada koneksi internet. Periksa jaringan Anda.',
-      );
+      throw Exception('Tidak ada koneksi internet. Periksa jaringan Anda.');
     } on http.ClientException {
-      throw Exception(
-        'Gagal menghubungi layanan transkripsi Grok.',
-      );
+      throw Exception('Gagal menghubungi layanan transkripsi Grok.');
     } on FormatException {
       throw Exception('Respons transkripsi tidak valid.');
     }
@@ -152,10 +131,7 @@ class AiService implements AiRepository {
       throw Exception('API key tidak boleh kosong.');
     }
 
-    await _storage.write(
-      key: 'ai_api_key',
-      value: trimmedKey,
-    );
+    await _storage.write(key: 'ai_api_key', value: trimmedKey);
 
     _cache.clear();
   }
@@ -176,9 +152,7 @@ class AiService implements AiRepository {
   Future<void> _reserveRequest() async {
     final prefs = await SharedPreferences.getInstance();
 
-    final today = DateTime.now()
-        .toIso8601String()
-        .substring(0, 10);
+    final today = DateTime.now().toIso8601String().substring(0, 10);
 
     final storedDate = prefs.getString('ai_usage_date');
 
@@ -197,10 +171,7 @@ class AiService implements AiRepository {
     await prefs.setInt('ai_usage_count', used + 1);
   }
 
-  Future<String> _analyzeImage(
-    File imageFile,
-    String prompt,
-  ) async {
+  Future<String> _analyzeImage(File imageFile, String prompt) async {
     if (!await imageFile.exists()) {
       throw Exception('File gambar tidak ditemukan.');
     }
@@ -208,24 +179,20 @@ class AiService implements AiRepository {
     final apiKey = await _readApiKey();
     await _reserveRequest();
 
-    final extension = imageFile.path
-        .split('.')
-        .last
-        .toLowerCase();
+    final extension = imageFile.path.split('.').last.toLowerCase();
 
     final mimeType = switch (extension) {
       'jpg' || 'jpeg' => 'image/jpeg',
       'png' => 'image/png',
       _ => throw Exception(
-          'Format gambar tidak didukung Grok. '
-          'Gunakan JPG, JPEG, atau PNG.',
-        ),
+        'Format gambar tidak didukung Grok. '
+        'Gunakan JPG, JPEG, atau PNG.',
+      ),
     };
 
     final bytes = await imageFile.readAsBytes();
 
-    final imageData =
-        'data:$mimeType;base64,${base64Encode(bytes)}';
+    final imageData = 'data:$mimeType;base64,${base64Encode(bytes)}';
 
     final data = await _post(apiKey, {
       'model': _chatModel,
@@ -233,14 +200,8 @@ class AiService implements AiRepository {
         {
           'role': 'user',
           'content': [
-            {
-              'type': 'input_text',
-              'text': prompt,
-            },
-            {
-              'type': 'input_image',
-              'image_url': imageData,
-            },
+            {'type': 'input_text', 'text': prompt},
+            {'type': 'input_image', 'image_url': imageData},
           ],
         },
       ],
@@ -275,18 +236,11 @@ class AiService implements AiRepository {
         throw Exception('Respons Grok tidak valid.');
       }
 
-      throw Exception(
-        _errorMessage(
-          response.statusCode,
-          response.body,
-        ),
-      );
+      throw Exception(_errorMessage(response.statusCode, response.body));
     } on TimeoutException {
       throw Exception('Koneksi ke Grok timeout. Silakan coba lagi.');
     } on SocketException {
-      throw Exception(
-        'Tidak ada koneksi internet. Periksa jaringan Anda.',
-      );
+      throw Exception('Tidak ada koneksi internet. Periksa jaringan Anda.');
     } on http.ClientException {
       throw Exception(
         'Gagal menghubungi layanan Grok. Periksa koneksi internet.',
@@ -334,10 +288,7 @@ class AiService implements AiRepository {
     throw Exception('Respons Grok kosong atau tidak valid.');
   }
 
-  String _errorMessage(
-    int statusCode,
-    String responseBody,
-  ) {
+  String _errorMessage(int statusCode, String responseBody) {
     String? apiMessage;
 
     try {

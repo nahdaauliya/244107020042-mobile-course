@@ -20,10 +20,6 @@ final authStateProvider = AsyncNotifierProvider<AuthNotifier, bool>(
   AuthNotifier.new,
 );
 
-/// Kegagalan membaca secure storage bersifat permanen, bukan sementara;
-/// retry bawaan Riverpod hanya akan membuat UI berkedip tanpa hasil.
-Duration? _noRetry(int retryCount, Object error) => null;
-
 class AuthNotifier extends AsyncNotifier<bool> {
   @override
   Future<bool> build() async {

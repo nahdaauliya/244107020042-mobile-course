@@ -33,9 +33,9 @@ class FakeNoteRepository implements NoteRepository {
 
 void main() {
   test('GetNotes meneruskan daftar dari repository', () async {
-    final repo = FakeNoteRepository(items: [
-      Note(title: 'A', updatedAt: DateTime(2026, 9, 27)),
-    ]);
+    final repo = FakeNoteRepository(
+      items: [Note(title: 'A', updatedAt: DateTime(2026, 9, 27))],
+    );
     final result = await GetNotes(repo).call();
     expect(result.failure, isNull);
     expect(result.notes.length, 1);

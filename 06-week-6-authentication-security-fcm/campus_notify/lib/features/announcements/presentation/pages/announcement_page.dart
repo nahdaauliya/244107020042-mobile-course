@@ -48,10 +48,8 @@ class AnnouncementPage extends ConsumerWidget {
               ],
             ),
             // UI hanya menerima pesan Failure yang sudah ramah pengguna.
-            error: (error, stackTrace) => Text(
-              '$error',
-              textAlign: TextAlign.center,
-            ),
+            error: (error, stackTrace) =>
+                Text('$error', textAlign: TextAlign.center),
             loading: () => const CircularProgressIndicator(),
           ),
         ),

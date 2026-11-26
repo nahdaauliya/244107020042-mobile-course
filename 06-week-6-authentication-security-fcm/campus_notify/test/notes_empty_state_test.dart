@@ -17,30 +17,25 @@ class _EmptyRepo implements NoteRepository {
   Future<({Note? note, Failure? failure})> addNote({
     required String title,
     String body = '',
-  }) async =>
-      (note: null, failure: null);
+  }) async => (note: null, failure: null);
 }
 
 void main() {
-  testWidgets(
-    'tanpa notes, query apa pun tetap tampilkan empty state awal',
-    (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [noteRepositoryProvider.overrideWithValue(_EmptyRepo())],
-          child: const MaterialApp(home: NotesPage()),
-        ),
-      );
-      await tester.pumpAndSettle();
+  testWidgets('tanpa notes, query apa pun tetap tampilkan empty state awal', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [noteRepositoryProvider.overrideWithValue(_EmptyRepo())],
+        child: const MaterialApp(home: NotesPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
 
-      await tester.enterText(find.byType(TextField), 'ujian');
-      await tester.pump();
+    await tester.enterText(find.byType(TextField), 'ujian');
+    await tester.pump();
 
-      expect(find.text('Belum ada catatan.'), findsOneWidget);
-      expect(
-        find.text('Tidak ada catatan dengan judul "ujian".'),
-        findsNothing,
-      );
-    },
-  );
+    expect(find.text('Belum ada catatan.'), findsOneWidget);
+    expect(find.text('Tidak ada catatan dengan judul "ujian".'), findsNothing);
+  });
 }

@@ -9,63 +9,42 @@ void main() {
           () => ChatValidator.validate(''),
           throwsA(
             predicate(
-              (e) => e.toString().contains(
-                'Pertanyaan tidak boleh kosong.',
-              ),
+              (e) => e.toString().contains('Pertanyaan tidak boleh kosong.'),
             ),
           ),
         );
       });
 
       test('Menolak pesan yang hanya berisi spasi', () {
-        expect(
-          () => ChatValidator.validate('     '),
-          throwsException,
-        );
+        expect(() => ChatValidator.validate('     '), throwsException);
       });
     });
 
     group('Validasi data sensitif', () {
       test('Menolak pesan yang mengandung NIK', () {
         expect(
-          () => ChatValidator.validate(
-            'NIK saya 1234567890123456',
-          ),
-          throwsA(
-            predicate(
-              (e) => e.toString().contains('berisi NIK'),
-            ),
-          ),
+          () => ChatValidator.validate('NIK saya 1234567890123456'),
+          throwsA(predicate((e) => e.toString().contains('berisi NIK'))),
         );
       });
 
       test('Menolak pesan yang mengandung nomor telepon', () {
         expect(
-          () => ChatValidator.validate(
-            'Nomor saya 081234567890',
-          ),
-          throwsA(
-            predicate(
-              (e) => e.toString().contains('nomor telepon'),
-            ),
-          ),
+          () => ChatValidator.validate('Nomor saya 081234567890'),
+          throwsA(predicate((e) => e.toString().contains('nomor telepon'))),
         );
       });
     });
 
     group('Validasi pesan normal', () {
       test('Menerima pesan yang valid', () {
-        final result = ChatValidator.validate(
-          'Apa itu Flutter?',
-        );
+        final result = ChatValidator.validate('Apa itu Flutter?');
 
         expect(result, 'Apa itu Flutter?');
       });
 
       test('Menghapus spasi di awal dan akhir pesan', () {
-        final result = ChatValidator.validate(
-          '  Halo AI  ',
-        );
+        final result = ChatValidator.validate('  Halo AI  ');
 
         expect(result, 'Halo AI');
       });

@@ -55,8 +55,12 @@ class NoteRepositoryImpl implements NoteRepository {
       final now = DateTime.now();
       final id = await db.insert(
         'notes',
-        NoteModel(title: title, body: body, updatedAt: now, dirty: true)
-            .toMap(),
+        NoteModel(
+          title: title,
+          body: body,
+          updatedAt: now,
+          dirty: true,
+        ).toMap(),
       );
       return (
         note: Note(

@@ -12,10 +12,7 @@ import '../ai/ai_repository.dart';
 class ChatScreen extends StatefulWidget {
   final AiRepository? repository;
 
-  const ChatScreen({
-    super.key,
-    this.repository,
-  });
+  const ChatScreen({super.key, this.repository});
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -52,48 +49,45 @@ class _ChatScreenState extends State<ChatScreen> {
     await _sendQuestion(question, addUserMessage: true);
   }
 
-  
   Future<void> _sendQuestion(
     String question, {
     required bool addUserMessage,
   }) async {
     if (_isLoading) return;
-  
+
     setState(() {
       if (addUserMessage) {
         _messages.add(_ChatMessage(text: question, isUser: true));
       }
-  
+
       _isLoading = true;
     });
-  
+
     _scrollToBottom();
-  
+
     String? retryQuestion;
-  
+
     try {
       final answer = await _aiService.ask(question);
-  
+
       if (!mounted) return;
-  
+
       if (answer.trim().isEmpty) {
         throw Exception('AI tidak memberikan jawaban.');
       }
-  
+
       setState(() {
-        _messages.add(
-          _ChatMessage(text: answer, isUser: false),
-        );
+        _messages.add(_ChatMessage(text: answer, isUser: false));
       });
-  
+
       _scrollToBottom();
     } catch (e) {
       if (!mounted) return;
-  
+
       final action = await _showAiErrorDialog(e);
-  
+
       if (!mounted) return;
-  
+
       if (action == 'retry') {
         retryQuestion = question;
       } else if (action == 'offline') {
@@ -115,15 +109,11 @@ class _ChatScreenState extends State<ChatScreen> {
         });
       }
     }
-  
+
     if (retryQuestion != null && mounted) {
-      await _sendQuestion(
-        retryQuestion,
-        addUserMessage: false,
-      );
+      await _sendQuestion(retryQuestion, addUserMessage: false);
     }
   }
-
 
   Future<String?> _showAiErrorDialog(Object error) {
     final message = error.toString().replaceFirst('Exception: ', '');

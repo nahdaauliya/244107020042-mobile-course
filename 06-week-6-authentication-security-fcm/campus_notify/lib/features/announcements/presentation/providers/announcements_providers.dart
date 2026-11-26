@@ -18,7 +18,7 @@ final announcementsProvider = FutureProvider<List<Announcement>>(
   (ref) => ref.watch(getAnnouncementsProvider).call(),
 );
 
-final announcementDetailProvider =
-    FutureProvider.family<Announcement, String>(
-  (ref, id) => ref.watch(announcementRepositoryProvider).getAnnouncementById(id),
+final announcementDetailProvider = FutureProvider.family<Announcement, String>(
+  (ref, id) =>
+      ref.watch(announcementRepositoryProvider).getAnnouncementById(id),
 );

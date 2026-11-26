@@ -7,9 +7,7 @@ class HomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Campus Notify - Home')),
-      body: const Center(
-        child: Text('Home Page Placeholder'),
-      ),
+      body: const Center(child: Text('Home Page Placeholder')),
     );
   }
 }

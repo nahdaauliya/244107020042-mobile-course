@@ -15,10 +15,10 @@ void main() {
   ];
 
   test('filter abaikan huruf besar/kecil', () {
-    expect(
-      search(list, 'BELANJA').map((n) => n.title),
-      ['Belanja bulanan', 'Belanja kampus'],
-    );
+    expect(search(list, 'BELANJA').map((n) => n.title), [
+      'Belanja bulanan',
+      'Belanja kampus',
+    ]);
   });
 
   test('query tak cocok kembalikan kosong', () {

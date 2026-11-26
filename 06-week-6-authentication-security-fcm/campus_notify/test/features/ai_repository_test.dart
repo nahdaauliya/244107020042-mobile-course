@@ -1,5 +1,5 @@
-
 import 'package:flutter_test/flutter_test.dart';
+
 import '../fakes/fake_ai_repository.dart';
 
 void main() {
@@ -20,12 +20,9 @@ void main() {
 
     test('Menghasilkan error ketika request gagal', () async {
       repository.shouldFail = true;
-    
-      await expectLater(
-        repository.ask('Apa itu Flutter?'),
-        throwsException,
-      );
-    
+
+      await expectLater(repository.ask('Apa itu Flutter?'), throwsException);
+
       expect(repository.askCallCount, 1);
     });
 

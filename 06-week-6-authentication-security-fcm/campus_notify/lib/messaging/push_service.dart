@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
 import '../routes.dart';
 
 final _local = FlutterLocalNotificationsPlugin();
@@ -45,14 +46,20 @@ Future<void> initFcmToken({
 
 Future<bool> requestNotificationPermission() async {
   final settings = await FirebaseMessaging.instance.requestPermission(
-    alert: true, badge: true, sound: true,
-    announcement: false, carPlay: false, criticalAlert: false,
+    alert: true,
+    badge: true,
+    sound: true,
+    announcement: false,
+    carPlay: false,
+    criticalAlert: false,
   );
   return settings.authorizationStatus == AuthorizationStatus.authorized ||
       settings.authorizationStatus == AuthorizationStatus.provisional;
 }
 
-Future<void> initLocalNotifications({void Function(String route)? onNavigate}) async {
+Future<void> initLocalNotifications({
+  void Function(String route)? onNavigate,
+}) async {
   if (onNavigate != null) _onRouteTap = onNavigate;
   const android = AndroidInitializationSettings('@mipmap/ic_launcher');
   const ios = DarwinInitializationSettings();
@@ -67,8 +74,10 @@ Future<void> initLocalNotifications({void Function(String route)? onNavigate}) a
     },
   );
 
-  final androidPlugin = _local.resolvePlatformSpecificImplementation<
-      AndroidFlutterLocalNotificationsPlugin>();
+  final androidPlugin = _local
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >();
   if (androidPlugin != null) {
     await androidPlugin.createNotificationChannel(_channel);
   }

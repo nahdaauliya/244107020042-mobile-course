@@ -9,7 +9,10 @@ void main() {
     });
 
     test('uses Indonesian month abbreviations', () {
-      expect(formatDateTime(DateTime(2026, 12, 31, 23, 59)), '31 Des 2026 23:59');
+      expect(
+        formatDateTime(DateTime(2026, 12, 31, 23, 59)),
+        '31 Des 2026 23:59',
+      );
     });
   });
 

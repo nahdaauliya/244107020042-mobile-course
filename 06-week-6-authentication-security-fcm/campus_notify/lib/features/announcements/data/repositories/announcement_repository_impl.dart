@@ -7,7 +7,7 @@ import '../models/announcement_model.dart';
 /// ditangkap dan diubah menjadi [Failure] yang ramah pengguna.
 class AnnouncementRepositoryImpl implements AnnouncementRepository {
   AnnouncementRepositoryImpl({List<Map<String, dynamic>>? source})
-      : _source = source ?? _defaultSource;
+    : _source = source ?? _defaultSource;
 
   final List<Map<String, dynamic>> _source;
 
@@ -46,8 +46,9 @@ class AnnouncementRepositoryImpl implements AnnouncementRepository {
   @override
   Future<Announcement> getAnnouncementById(String id) async {
     try {
-      final match =
-          _source.where((json) => json['id'].toString() == id).toList();
+      final match = _source
+          .where((json) => json['id'].toString() == id)
+          .toList();
       if (match.isEmpty) {
         throw const NotFoundFailure('Pengumuman tidak ditemukan.');
       }
