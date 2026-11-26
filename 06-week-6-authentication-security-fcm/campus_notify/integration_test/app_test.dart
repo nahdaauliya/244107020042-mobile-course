@@ -4,7 +4,7 @@ import 'package:campus_notify/main.dart';
 
 import '../test/fakes/fake_ai_repository.dart';
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
